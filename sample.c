@@ -15,10 +15,7 @@ int main(void)
     }
 }
 void sig(int sn){
- 
-  time_t t=time(NULL);//time() takes current time
+  time_t t=time(NULL);//time(NULL) takes current time
   printf("%d\n",sn);
-  while((time(NULL)-t)<30);//loop runs until difference b/w current time and time before loop is less than 30s
+  while((time(NULL)-t)<30);//loop runs until difference b/w current time and t is less than 30s
 }
-
-        
