@@ -8,7 +8,6 @@ int main(void)
 {
     while(1)
     {
-      fflush(stdin);
       sig(1);
       sig(2);
       sig(3);
