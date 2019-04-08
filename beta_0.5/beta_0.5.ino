@@ -9,28 +9,53 @@
 #define d9 10
 #define d10 11
 
-
-
 typedef struct{
   int b1,b2;
 }location;
 
+//locs array holds the pin numbers of the signals at junction i. locs[i] structure holds the pin numbers through which the signal code for the signal to be turned green will be sent.
 location locs[9];
+
+//path flag when set indicates that the user has begun to enter the path for emergency service cycle
 int path_flag=0;
-int path[9],count=0;
+
+//path array holds the path for emergency vehicle will take
+int path[9];
+
+//count indicates the number of nodes present 
+int count=0;
+
+//present[i] holds the signal code of the signal currently green at junction 'i'.
 int present[9]={0,0,0,0,0,0,0,0,0};
+
+//no_of_sigs is the matrix where no_of_sigs[i] denotes the number of signals at junction i.
 int no_of_sigs[9]={0,3,0,3,4,3,0,3,0};
 
+//a,b,c and d are used to hold input binary values taken from DTMF module 
 unsigned a,b,c,d;
+
+//val holds the decoded decimal value received from DTMF module
 int val;
+
+//time1 and time2 are used to keep track of the signal cycle time
 unsigned long time1,time2;
-int lookup[9][9];
+
+//lookup[i][j] in the lookup matrix indicates code for the signal to be activated when the vehicle moves from junction i to j. 
+//-1 indicates that there is no direct route from i to j 
+int lookup[9][9]={
+  {-1, 2,-1, 1,-1,-1,-1,-1,-1},   
+  {-1,-1,-1,-1, 2,-1,-1,-1,-1},
+  {-1, 0,-1,-1,-1, 0,-1,-1,-1},
+  {-1,-1,-1,-1, 1,-1,-1,-1,-1},
+  {-1, 1,-1, 2,-1, 2,-1, 1,-1},
+  {-1,-1,-1,-1, 3,-1,-1,-1,-1},
+  {-1,-1,-1, 0,-1,-1,-1, 0,-1},
+  {-1,-1,-1,-1, 0, 1,-1,-1,-1},
+  {-1,-1,-1,-1,-1,-1,-1, 2,-1}
+};
 
 void setup() {
-  // put your setup code here, to run once:
-  int j;
-  int i;
-  Serial.begin(9600);
+  //setup of input and output ports
   pinMode(2,OUTPUT);
   pinMode(3,OUTPUT);
   pinMode(4,OUTPUT);
@@ -45,6 +70,8 @@ void setup() {
   pinMode(A1,INPUT);
   pinMode(A2,INPUT);
   pinMode(A3,INPUT);
+
+  //initialize the pin numbers to the respective junctions
   locs[1].b1=d1;
   locs[1].b2=d2;
   locs[3].b1=d3;
@@ -55,46 +82,25 @@ void setup() {
   locs[5].b2=d8;
   locs[7].b1=d9;
   locs[7].b2=d10;
-  for(i=0;i<9;i++)
-  {
-    for(j=0;j<9;j++)
-    {
-      lookup[i][j]=-1;
-    }
-  }
-  lookup[0][1]=2;
-  lookup[2][1]=0;
-  lookup[4][1]=1;
-  lookup[0][3]=1;
-  lookup[4][3]=2;
-  lookup[6][3]=0;
-  lookup[1][4]=2;
-  lookup[3][4]=1;
-  lookup[5][4]=3;
-  lookup[7][4]=0;
-  lookup[2][5]=0;
-  lookup[4][5]=2;
-  lookup[7][5]=1;
-  lookup[4][7]=1;
-  lookup[6][7]=0;
-  lookup[8][7]=2;
-  
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   int i;
   setupLights();
   time1=millis();
   time2=0;
   while(time2<5000)
   {
+    //read values from DTMF
     a=digitalRead(A0);
     b=digitalRead(A1);
     c=digitalRead(A2);
     d=digitalRead(A3);
-    
+
+    //calculate decimal value
     val=value(a,b,c,d);
+
+    //start recording path if user 
     if(val==11 && path_flag==0)
     {
       path_flag=1;  
@@ -108,7 +114,7 @@ void loop() {
         val--;
         path[count]=val;
         count++;
-        Serial.println(val+1);
+       
         
       }
       else if(val-1!=path[count-1])
@@ -117,14 +123,14 @@ void loop() {
         val--;
         path[count]=val;
         count++;
-                Serial.println(val+1);
+                
 
       }
     }
     if(val==12 && path_flag==1)
     {
       for(int j=0;j<count;j++)
-        Serial.print(path[j]);
+        
      
       setupEmergency();
       count=0;
@@ -150,8 +156,10 @@ void setupLights()
 void sendSignal(int j)
 {
   
-  if(j==0 || j==2 || j==6 || j==8)
+  if(j==0 || j==2 || j==6 || j==8)  //freeway as there are no signals at these nodes
     return;
+
+  //
   if(present[j]==0){
     digitalWrite(locs[j].b1,LOW);
     digitalWrite(locs[j].b2,LOW);
@@ -187,11 +195,11 @@ void setupEmergency()
     c1=lookup[a1][b1];
     prev=present[b1];
     present[b1]=c1;
-    
     sendSignal(b1);
     present[b1]=prev;
   }
 }
+
 
 
 int value(int a0,int b0,int c0,int d0)
